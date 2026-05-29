@@ -5,14 +5,12 @@ from typing import Optional, List
 
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, or_
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 
 
 BASE_DIR = Path(__file__).resolve().parent
-STATIC_DIR = BASE_DIR / "static"
 DATABASE_URL = f"sqlite:///{BASE_DIR / 'support_crm.db'}"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -61,14 +59,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
 
 @app.get("/")
 def home():
-    index_file = STATIC_DIR / "index.html"
+    index_file = BASE_DIR / "index.html"
     if not index_file.exists():
-        raise HTTPException(status_code=404, detail="index.html not found inside static folder")
+        raise HTTPException(status_code=404, detail="index.html not found")
     return FileResponse(index_file)
 
 
