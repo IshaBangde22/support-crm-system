@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Optional, List
 
 from fastapi import FastAPI, Depends, HTTPException, Query
@@ -10,13 +11,11 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, F
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
 
 
-DATABASE_URL = "sqlite:///./support_crm.db"
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+DATABASE_URL = f"sqlite:///{BASE_DIR / 'support_crm.db'}"
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
-
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
@@ -62,7 +61,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.get("/")
+def home():
+    index_file = STATIC_DIR / "index.html"
+    if not index_file.exists():
+        raise HTTPException(status_code=404, detail="index.html not found inside static folder")
+    return FileResponse(index_file)
 
 
 def get_db():
@@ -135,11 +142,6 @@ class TicketUpdate(BaseModel):
 class TicketUpdateResponse(BaseModel):
     success: bool
     updated_at: datetime
-
-
-@app.get("/")
-def home():
-    return FileResponse("static/index.html")
 
 
 @app.post("/api/tickets", response_model=TicketCreateResponse)
